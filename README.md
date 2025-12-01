@@ -15,3 +15,38 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 # flutter_app_jisu
+
+
+## 📁 Project Folder Structure
+
+'''
+lib/
+├── features/
+│   ├── auth/
+│   │   ├── loading_id_page.dart
+│   │   ├── loading_page.dart
+│   │   └── login_page.dart
+│   │
+│   ├── mode/
+│   │   ├── mode_select_page.dart
+│   │   └── type_select_page.dart
+│   │
+│   └── player/
+│       └── screens/
+│           ├── home/
+│           │   └── home_page.dart
+│           ├── next/
+│           │   └── next_page.dart
+│           └── result/
+│
+├── settings/
+│
+├── services/
+│
+├── utils/
+│   └── layout_utils.dart
+│
+├── widgets/
+│
+└── main.dart
+'''
