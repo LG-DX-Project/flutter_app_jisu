@@ -2,11 +2,13 @@
 import 'package:flutter/material.dart';
 
 // 각 화면 import
-import 'screens/login/login_page.dart';
-import 'screens/loading/loading_page.dart';
-import 'screens/next/next_page.dart';
-import 'screens/home/home_page.dart';
-import 'screens/result/result_page.dart';
+import 'features/auth/login_page.dart';
+import 'features/auth/loading_page.dart';
+import 'features/auth/loading_id_page.dart';
+import 'features/mode/type_select_page.dart';
+import 'features/screens/next/next_page.dart';
+import 'features/screens/home/home_page.dart';
+import 'features/screens/result/result_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,6 +27,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const LoginPage(),
         '/loading': (context) => const LoadingPage(),
+        '/login-select': (context) => const LoginSelectPage(),
+        '/mode-select': (context) => const ModeSelectPage(),
         '/next': (context) => const NextPage(),
         '/home': (context) => const HomePage(),
         '/result': (context) => const ResultPage(),
