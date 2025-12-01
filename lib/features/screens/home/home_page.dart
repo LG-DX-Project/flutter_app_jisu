@@ -1,5 +1,6 @@
 // lib/features/screens/home/home_page.dart
 import 'package:flutter/material.dart';
+import '../../settings/setting_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,8 +12,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isPanelVisible = false;
   String _selectedMode = 'none';
+  bool _isDetailSettingsHovered = false; // 세부설정 호버 상태
 
-  // 🔥 모드 버튼 목록 (고정 순서)
+  // 모드 버튼 목록 (고정 순서)
   final List<Map<String, String>> _modes = const [
     {'label': '없음', 'mode': 'none'},
     {'label': '영화/드라마', 'mode': 'movie'},
@@ -20,10 +22,10 @@ class _HomePageState extends State<HomePage> {
     {'label': '예능', 'mode': 'variety'},
   ];
 
-  // 🔥 모드 리스트 스크롤 컨트롤러
+  // 모드 리스트 스크롤 컨트롤러
   final ScrollController _modeScrollController = ScrollController();
 
-  // 🔥 토글 상태 Map
+  // 토글 상태 Map
   final Map<String, bool> _toggles = {
     '소리의 높낮이': true,
     '감정 색상': false,
@@ -81,13 +83,13 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-          // 슬라이드 패널
+          // 슬라이드 패널 (왼쪽/위/아래 30px 띄우기)
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            left: _isPanelVisible ? 0 : -555,
-            top: 0,
-            bottom: 0,
+            left: _isPanelVisible ? 30 : -555,
+            top: 30,
+            bottom: 30,
             child: MouseRegion(
               onExit: (_) => setState(() => _isPanelVisible = false),
               child: _buildSidePanel(),
@@ -99,13 +101,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------
-  // 🔹 왼쪽 슬라이드 패널 (세로 스크롤 제거, 고정 레이아웃)
+  // 왼쪽 슬라이드 패널
   // ---------------------------------------------------------
   Widget _buildSidePanel() {
     return Container(
       width: 555,
       decoration: BoxDecoration(
         color: const Color(0xFF222222).withOpacity(0.92),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.zero, // 화면 모서리와 맞닿는 부분
+          topRight: Radius.circular(30),
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.only(
@@ -133,7 +141,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------
-  // 버튼: 추가하기
+  // 추가하기 버튼
   // ---------------------------------------------------------
   Widget _buildAddButton() {
     return Container(
@@ -162,28 +170,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------
-  // 버튼 그룹: 없음 / 영화 / 다큐 / 예능 (가로 스크롤)
+  // 모드 버튼 그룹 (없음 / 영화 / 다큐 / 예능)
   // ---------------------------------------------------------
   Widget _buildModeButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 왼쪽 화살표
-        SizedBox(
+        const SizedBox(
           width: 40,
           height: 40,
-          child: Icon(
-            Icons.chevron_left,
-            color: Colors.white.withOpacity(0.8),
-            size: 32,
-          ),
+          child: Icon(Icons.chevron_left, color: Colors.white70, size: 32),
         ),
 
-        // 🔥 가로 스크롤 가능한 버튼 영역 (피그마: width 419, height 67)
+        // 가로 스크롤 영역
         Container(
-          width: 419, // 피그마 기준 고정 너비
-          height: 67, // 피그마 기준 고정 높이
-          padding: const EdgeInsets.all(4), // 박스 앞 패딩: 4
+          width: 419,
+          height: 67,
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(10),
@@ -200,8 +204,7 @@ class _HomePageState extends State<HomePage> {
                   return Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (index > 0)
-                        const SizedBox(width: 20), // 박스와 박스 사이 거리: 20
+                      if (index > 0) const SizedBox(width: 20),
                       _buildModeButton(
                         label: modeData['label']!,
                         mode: modeData['mode']!,
@@ -216,14 +219,10 @@ class _HomePageState extends State<HomePage> {
         ),
 
         // 오른쪽 화살표
-        SizedBox(
+        const SizedBox(
           width: 40,
           height: 40,
-          child: Icon(
-            Icons.chevron_right,
-            color: Colors.white.withOpacity(0.8),
-            size: 32,
-          ),
+          child: Icon(Icons.chevron_right, color: Colors.white70, size: 32),
         ),
       ],
     );
@@ -242,11 +241,9 @@ class _HomePageState extends State<HomePage> {
           _selectedMode = mode;
         });
 
-        // 🔥 선택된 버튼이 앞으로 "밀려오는" 느낌으로 스크롤 이동
-        // 버튼 하나의 대략적인 폭: (minWidth 72 + 가로패딩 24*2) + 간격 20 ≈ 140
+        // 선택된 버튼 쪽으로 스크롤 살짝 이동
         const double itemWidth = 140;
-        final double targetOffset =
-            (index * itemWidth) - itemWidth; // 선택된 버튼이 살짝 왼쪽으로 당겨지게
+        final double targetOffset = (index * itemWidth) - itemWidth;
         final double maxOffset = _modeScrollController.position.maxScrollExtent;
 
         _modeScrollController.animateTo(
@@ -263,7 +260,10 @@ class _HomePageState extends State<HomePage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: isSelected
-              ? Border.all(color: const Color(0xFF9033DD), width: 1)
+              ? Border.all(
+                  color: const Color(0xFF9033DD), // 보라색 테두리
+                  width: 2, // 두꺼운 테두리
+                )
               : null,
         ),
         child: Center(
@@ -284,103 +284,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------
-  // 미리보기 이미지
+  // 미리보기 섹션
   // ---------------------------------------------------------
   Widget _buildPreviewSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          '미리보기',
-          style: TextStyle(
-            fontFamily: 'Pretendard',
-            fontSize: 28,
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 400,
-          height: 225,
-          decoration: BoxDecoration(
-            color: const Color(0xFFD9D9D9),
-            borderRadius: BorderRadius.circular(2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: Stack(
-              children: [
-                Image.asset(
-                  _previewImage,
-                  width: 400,
-                  height: 225,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      const Center(child: Icon(Icons.image, size: 60)),
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 40,
-                    color: Colors.black.withOpacity(0.5),
-                    child: const Center(
-                      child: Text(
-                        '자막 스타일이 이렇게 보여요!',
-                        style: TextStyle(
-                          fontFamily: 'Pretendard',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------
-  // 설정 / 세부설정 버튼들
-  // ---------------------------------------------------------
-  Widget _buildSettingsSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Container(
-          width: 120,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(73),
-          ),
-          child: const Center(
-            child: Text(
-              '설정',
-              style: TextStyle(
-                fontFamily: 'Pretendard',
-                fontSize: 28,
-                fontWeight: FontWeight.w400,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(46),
-          ),
-          child: const Text(
-            '세부설정',
+        const Center(
+          child: Text(
+            '미리보기',
             style: TextStyle(
               fontFamily: 'Pretendard',
               fontSize: 28,
@@ -389,12 +301,146 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        Center(
+          child: Container(
+            width: 400,
+            height: 225,
+            decoration: BoxDecoration(
+              color: const Color(0xFFD9D9D9),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: Stack(
+                children: [
+                  Image.asset(
+                    _previewImage,
+                    width: 400,
+                    height: 225,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Center(child: Icon(Icons.image, size: 60)),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 40,
+                      color: Colors.black.withOpacity(0.5),
+                      child: const Center(
+                        child: Text(
+                          '자막 스타일이 이렇게 보여요!',
+                          style: TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   // ---------------------------------------------------------
-  // 🔥 토글 리스트 (실제로 on/off 동작)
+  // 설정 / 세부설정
+  // ---------------------------------------------------------
+  Widget _buildSettingsSection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text(
+          '설정',
+          style: TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 32,
+            fontWeight: FontWeight.w400,
+            color: Colors.white,
+            height: 44.8 / 32,
+          ),
+        ),
+        _buildDetailSettingsButton(),
+      ],
+    );
+  }
+
+  // 세부설정 버튼 (텍스트 + 아이콘 중앙정렬, 호버 시 테두리)
+  Widget _buildDetailSettingsButton() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push<Map<String, bool>>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SettingPage(toggles: Map.from(_toggles)),
+          ),
+        );
+
+        if (result != null) {
+          setState(() {
+            _toggles
+              ..clear()
+              ..addAll(result);
+          });
+        }
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isDetailSettingsHovered = true),
+        onExit: (_) => setState(() => _isDetailSettingsHovered = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 48, // 버튼 높이 고정
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(46),
+            border: _isDetailSettingsHovered
+                ? Border.all(color: Colors.white, width: 1)
+                : null,
+          ),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text(
+                  '세부설정',
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
+                    height: 39.2 / 28,
+                  ),
+                ),
+                SizedBox(width: 8),
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Icon(
+                    Icons.chevron_right,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------
+  // 토글 리스트
   // ---------------------------------------------------------
   Widget _buildToggleSwitches() {
     return Column(
