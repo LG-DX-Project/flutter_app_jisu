@@ -6,6 +6,7 @@ import 'features/auth/login_page.dart';
 import 'features/auth/loading_page.dart';
 import 'features/auth/loading_id_page.dart';
 import 'features/mode/type_select_page.dart';
+import 'features/mode/mode_select_page.dart';
 import 'features/screens/next/next_page.dart';
 import 'features/screens/home/home_page.dart';
 import 'features/screens/result/result_page.dart';
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const LoginPage(),
         '/loading': (context) => const LoadingPage(),
         '/login-select': (context) => const LoginSelectPage(),
+        '/type-select': (context) => const TypeSelectPage(),
         '/mode-select': (context) => const ModeSelectPage(),
         '/next': (context) => const NextPage(),
         '/home': (context) => const HomePage(),

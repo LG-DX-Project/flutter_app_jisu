@@ -1,15 +1,15 @@
-// lib/features/mode/mode_select_page.dart
+// lib/features/mode/type_select_page.dart
 import 'package:flutter/material.dart';
 import '../../utils/layout_utils.dart';
 
-class ModeSelectPage extends StatefulWidget {
-  const ModeSelectPage({super.key});
+class TypeSelectPage extends StatefulWidget {
+  const TypeSelectPage({super.key});
 
   @override
-  State<ModeSelectPage> createState() => _ModeSelectPageState();
+  State<TypeSelectPage> createState() => _TypeSelectPageState();
 }
 
-class _ModeSelectPageState extends State<ModeSelectPage> {
+class _TypeSelectPageState extends State<TypeSelectPage> {
   int? _hoveredIndex;
 
   @override
@@ -176,35 +176,41 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
         onEnter: (_) => setState(() => _hoveredIndex = index),
         //마우스가 떠나는 순간 hover중이 아님을 알림
         onExit: (_) => setState(() => _hoveredIndex = null),
-        child: Center(
-          //hover시 카드 부드럽게 커지도록 설정
-          child: AnimatedScale(
-            scale: scale, //1.0 -> 1.2 로 커짐
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            //박스자체 스타일 변경
-            child: AnimatedContainer(
+        child: GestureDetector(
+          onTap: () {
+            // 카드 클릭 시 다음 페이지로 이동
+            Navigator.pushReplacementNamed(context, '/mode-select');
+          },
+          child: Center(
+            //hover시 카드 부드럽게 커지도록 설정
+            child: AnimatedScale(
+              scale: scale, //1.0 -> 1.2 로 커짐
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              //박스카드 크기
-              width: 380,
-              height: 210,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: borderColor, width: 3),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 제목
-                    buildCardTitle(title),
-                    const Spacer(),
-                    // 각 카드별 이미지 영역
-                    buildCardImageSection(isHovered, iconPath, iconHoverPath),
-                  ],
+              //박스자체 스타일 변경
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                //박스카드 크기
+                width: 380,
+                height: 210,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor, width: 3),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 제목
+                      buildCardTitle(title),
+                      const Spacer(),
+                      // 각 카드별 이미지 영역
+                      buildCardImageSection(isHovered, iconPath, iconHoverPath),
+                    ],
+                  ),
                 ),
               ),
             ),

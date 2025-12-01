@@ -22,9 +22,9 @@ samples, guidance on mobile development, and a full API reference.
 lib/
 ├── features/
 │   ├── auth/
-│   │   ├── loading_id_page.dart
-│   │   ├── loading_page.dart
-│   │   └── login_page.dart
+│   │   ├── loading_id_page.dart //3번째 페이지
+│   │   ├── loading_page.dart //2번째 페이지
+│   │   └── login_page.dart //1번째 페이지
 │   │
 │   ├── mode/
 │   │   ├── mode_select_page.dart

@@ -13,11 +13,11 @@ class _LoginSelectPageState extends State<LoginSelectPage> {
   @override
   void initState() {
     super.initState();
-    // ✅ 3초 후 자동으로 모드 선택 페이지로 이동 (네 번째 화면)
-    //    클릭 요소 없이 로딩처럼 사용
+
+    // 3초 후 다음 페이지로 이동 (TypeSelectPage로)
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/mode-select');
+        Navigator.pushReplacementNamed(context, '/type-select');
       }
     });
   }
@@ -33,50 +33,38 @@ class _LoginSelectPageState extends State<LoginSelectPage> {
     );
   }
 
-  /// 전체 화면 내용 (텍스트 + 계정 카드)
+  /// 전체 로그인 선택 화면 콘텐츠
   Widget _buildLoginSelectContent() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center, // 전체 화면 세로 가운데
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // ✅ 계정 카드 전체를 화면 가로 중앙에 배치
-        Center(child: _buildAccountCard()),
-      ],
+      children: [_buildAccountCard()],
     );
   }
 
-  /// 계정 선택 카드 UI
-  /// 시각적으로 가운데 오도록 Stack + Align 사용
+  /// 가운데 자연스럽게 정렬된 계정 카드
   Widget _buildAccountCard() {
     return SizedBox(
       width: 517,
-      height: 395,
-      child: Stack(
-        // alignment를 기본 center로 깔아두면,
-        // Align에서 topCenter / bottomCenter 기준이 더 직관적임
-        alignment: Alignment.center,
+      height: 450, // 원 + 이메일 박스 균형이 잘 맞도록 높이 증가
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center, // 세로 중앙 기준 정렬
         children: [
-          // ✅ 파란색 원형 프레임 (L 아이콘) - 상단 중앙 배치
-          Align(alignment: Alignment.topCenter, child: buildLgIdImage()),
-
-          // ✅ 반투명 흰색 프레임 (이메일) - 하단 중앙 배치
-          Align(
-            alignment: Alignment.bottomCenter,
-            //로그인 했을 때 뜨는 로그인 아이디.
-            child: buildLgLoginId(),
-          ),
+          buildLgIdImage(), // 파란 원
+          const SizedBox(height: 40), // 간격
+          buildLgLoginId(), // 로그인 이메일 박스
         ],
       ),
     );
   }
 
-  //로그인 했을 때 뜨는 로그인 아이디. 반투명 흰색 프레임 (이메일) - 하단 중앙 배치
-  Container buildLgLoginId() {
+  /// 로그인 ID 이메일 박스
+  Widget buildLgLoginId() {
     return Container(
       width: 517,
       height: 75,
       decoration: BoxDecoration(
-        // ignore: deprecated_member_use
-        color: Colors.white.withOpacity(0.2), // opacity: 0.2
+        color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(50),
       ),
       child: const Center(
@@ -94,13 +82,13 @@ class _LoginSelectPageState extends State<LoginSelectPage> {
     );
   }
 
-  // ✅ 파란색 원형 프레임 (L 아이콘) - 상단 중앙 배치
-  Container buildLgIdImage() {
+  /// 파란 원 + L 텍스트
+  Widget buildLgIdImage() {
     return Container(
       width: 240,
       height: 240,
       decoration: BoxDecoration(
-        color: const Color(0xFF505dff), // #505dff
+        color: const Color(0xFF505dff),
         borderRadius: BorderRadius.circular(160),
       ),
       child: const Center(
