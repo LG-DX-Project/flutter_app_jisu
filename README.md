@@ -19,7 +19,6 @@ samples, guidance on mobile development, and a full API reference.
 
 ## 📁 Project Folder Structure
 
-'''
 lib/
 ├── features/
 │   ├── auth/
@@ -49,4 +48,3 @@ lib/
 ├── widgets/
 │
 └── main.dart
-'''
