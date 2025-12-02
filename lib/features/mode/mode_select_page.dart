@@ -12,6 +12,23 @@ class ModeSelectPage extends StatefulWidget {
 class _ModeSelectPageState extends State<ModeSelectPage> {
   String? _selectedMode; // 선택된 모드
 
+  // 모드별 영상/이미지 경로 매핑
+  // 나중에 동영상 경로로 변경 가능
+  String? _getVideoPathForMode(String? mode) {
+    switch (mode) {
+      case 'none':
+        return 'assets/mode_none.png'; // 없음 모드용 영상/이미지
+      case 'movie':
+        return 'assets/mode_movie.png'; // 영화/드라마 모드용 영상/이미지
+      case 'documentary':
+        return 'assets/mode_documentary.png'; // 다큐멘터리 모드용 영상/이미지
+      case 'variety':
+        return 'assets/mode_variety.png'; // 예능 모드용 영상/이미지
+      default:
+        return null; // 선택되지 않았을 때
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,8 +91,8 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF333333),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.transparent,
+        // borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -86,19 +103,19 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
             mode: 'none',
             isSelected: _selectedMode == 'none',
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 8),
           _buildModeButton(
             label: '영화/드라마',
             mode: 'movie',
             isSelected: _selectedMode == 'movie',
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 8),
           _buildModeButton(
             label: '다큐멘터리',
             mode: 'documentary',
             isSelected: _selectedMode == 'documentary',
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 8),
           _buildModeButton(
             label: '예능',
             mode: 'variety',
@@ -141,7 +158,7 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
                 fontSize: 28,
                 fontWeight: FontWeight.w400,
                 color: Colors.white,
-                height: 1.19,
+                height: 1.4, // lineHeight: 39.2px / fontSize: 28px ≈ 1.4
               ),
               textAlign: TextAlign.center,
             ),
@@ -153,8 +170,11 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
 
   // -------------------------------------------------------------
   // 영상 영역
+  // 모드에 따라 다른 영상/이미지 표시
   // -------------------------------------------------------------
   Widget _buildVideoArea() {
+    final videoPath = _getVideoPathForMode(_selectedMode);
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -170,52 +190,61 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
-            child: Image.asset(
-              'assets/screenshot_2025-11-30_11.16.03_1.png',
-              width: 800,
-              height: 500,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 800,
-                  height: 500,
-                  color: const Color(0xFFD9D9D9),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.play_circle_outline,
-                          size: 120,
-                          color: Colors.black.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          '영상 영역',
-                          style: TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 32,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black.withOpacity(0.5),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '클릭하여 홈으로 이동',
-                          style: TextStyle(
-                            fontFamily: 'Pretendard',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.black.withOpacity(0.4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+            child: videoPath != null
+                ? Image.asset(
+                    videoPath,
+                    width: 800,
+                    height: 500,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return _buildPlaceholder();
+                    },
+                  )
+                : _buildPlaceholder(),
           ),
+        ),
+      ),
+    );
+  }
+
+  // 플레이스홀더 (선택되지 않았거나 영상을 찾을 수 없을 때)
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 800,
+      height: 500,
+      color: const Color(0xFFD9D9D9),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.play_circle_outline,
+              size: 120,
+              color: Colors.black.withOpacity(0.5),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _selectedMode == null ? '시청 유형을 선택해주세요' : '영상 영역',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 32,
+                fontWeight: FontWeight.w500,
+                color: Colors.black.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _selectedMode == null
+                  ? '위에서 시청 유형을 선택하면 영상이 표시됩니다'
+                  : '클릭하여 홈으로 이동',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 20,
+                fontWeight: FontWeight.w400,
+                color: Colors.black.withOpacity(0.4),
+              ),
+            ),
+          ],
         ),
       ),
     );

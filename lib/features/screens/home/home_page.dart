@@ -141,31 +141,64 @@ class _HomePageState extends State<HomePage> {
   }
 
   // ---------------------------------------------------------
-  // 추가하기 버튼
+  // 퀵모드 섹션 (이미지 + 텍스트 + 화살표 아이콘)
   // ---------------------------------------------------------
   Widget _buildAddButton() {
-    return Container(
-      width: 160,
-      height: 59,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF315BD5), Color(0xFF9232DD)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // 왼쪽: 이미지 + 텍스트
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 왼쪽 이미지
+            Image.asset(
+              'assets/quick_image.png',
+              width: 48,
+              height: 48,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(width: 48, height: 48, color: Colors.grey);
+              },
+            ),
+            const SizedBox(width: 16),
+            // "퀵모드" 텍스트
+            const Text(
+              '퀵모드',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 32,
+                fontWeight: FontWeight.w400,
+                color: Colors.white,
+                height: 44.8 / 32,
+              ),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: const Center(
-        child: Text(
-          '추가하기',
-          style: TextStyle(
-            fontFamily: 'Pretendard',
-            fontSize: 28,
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
+        // 오른쪽: 화살표 아이콘 (클릭 시 패널 닫기)
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isPanelVisible = false;
+            });
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.chevron_left,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -177,10 +210,29 @@ class _HomePageState extends State<HomePage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 왼쪽 화살표
-        const SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(Icons.chevron_left, color: Colors.white70, size: 32),
+        GestureDetector(
+          onTap: () {
+            if (_modeScrollController.hasClients) {
+              // 한 버튼 너비만큼 왼쪽으로 스크롤
+              final scrollAmount = _calculateButtonWidth();
+              final newOffset = (_modeScrollController.offset - scrollAmount)
+                  .clamp(0.0, _modeScrollController.position.maxScrollExtent)
+                  .toDouble();
+              _modeScrollController.animateTo(
+                newOffset,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(Icons.chevron_left, color: Colors.white70, size: 32),
+            ),
+          ),
         ),
 
         // 가로 스크롤 영역
@@ -219,13 +271,55 @@ class _HomePageState extends State<HomePage> {
         ),
 
         // 오른쪽 화살표
-        const SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(Icons.chevron_right, color: Colors.white70, size: 32),
+        GestureDetector(
+          onTap: () {
+            if (_modeScrollController.hasClients) {
+              // 한 버튼 너비만큼 오른쪽으로 스크롤
+              final scrollAmount = _calculateButtonWidth();
+              final newOffset = (_modeScrollController.offset + scrollAmount)
+                  .clamp(0.0, _modeScrollController.position.maxScrollExtent)
+                  .toDouble();
+              _modeScrollController.animateTo(
+                newOffset,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: const SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(Icons.chevron_right, color: Colors.white70, size: 32),
+            ),
+          ),
         ),
       ],
     );
+  }
+
+  // 버튼의 평균 너비 계산 (스크롤 이동량 결정용)
+  double _calculateButtonWidth() {
+    double totalWidth = 0;
+    for (final modeData in _modes) {
+      final label = modeData['label']!;
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 28,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      totalWidth += textPainter.size.width + 48; // padding 24*2
+    }
+    // 평균 버튼 너비 + 간격
+    return (totalWidth / _modes.length) + 20;
   }
 
   Widget _buildModeButton({
@@ -241,28 +335,54 @@ class _HomePageState extends State<HomePage> {
           _selectedMode = mode;
         });
 
-        // 선택된 버튼 쪽으로 스크롤 살짝 이동
-        const double itemWidth = 140;
-        final double targetOffset = (index * itemWidth) - itemWidth;
-        final double maxOffset = _modeScrollController.position.maxScrollExtent;
+        // 다음 프레임에서 버튼 위치 계산 및 스크롤 이동
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_modeScrollController.hasClients) {
+            // 이전 버튼들의 누적 너비 계산 (간격 포함)
+            double cumulativeWidth = 0;
+            for (int i = 0; i < index; i++) {
+              // 각 버튼의 예상 너비 계산 (텍스트 길이 기반)
+              final prevLabel = _modes[i]['label']!;
+              final textPainter = TextPainter(
+                text: TextSpan(
+                  text: prevLabel,
+                  style: const TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                textDirection: TextDirection.ltr,
+              );
+              textPainter.layout();
+              final prevButtonWidth =
+                  textPainter.size.width + 48; // padding 24*2
+              cumulativeWidth += prevButtonWidth + (i > 0 ? 20 : 0); // 간격 20px
+            }
 
-        _modeScrollController.animateTo(
-          targetOffset.clamp(0, maxOffset),
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
+            // 버튼을 맨 앞으로 보이도록 스크롤
+            _modeScrollController.animateTo(
+              cumulativeWidth.clamp(
+                0,
+                _modeScrollController.position.maxScrollExtent,
+              ),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
       },
       child: Container(
         height: 59,
         constraints: const BoxConstraints(minWidth: 72),
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Color(0xFF4A4A4A),
           borderRadius: BorderRadius.circular(10),
           border: isSelected
               ? Border.all(
-                  color: const Color(0xFF9033DD), // 보라색 테두리
-                  width: 2, // 두꺼운 테두리
+                  color: Colors.white, // 흰색 테두리
+                  width: 3,
                 )
               : null,
         ),
@@ -273,7 +393,7 @@ class _HomePageState extends State<HomePage> {
               fontFamily: 'Pretendard',
               fontSize: 28,
               fontWeight: FontWeight.w500,
-              color: Colors.black,
+              color: Colors.white,
               height: 39.2 / 28,
             ),
             textAlign: TextAlign.center,
@@ -358,15 +478,39 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          '설정',
-          style: TextStyle(
-            fontFamily: 'Pretendard',
-            fontSize: 32,
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
-            height: 44.8 / 32,
-          ),
+        // 왼쪽: 아이콘 + 텍스트
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 설정 아이콘 (48x48 원형)
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.transparent,
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Image(image: AssetImage('assets/settings_image.png')),
+                ),
+              ),
+            ),
+            const SizedBox(width: 13),
+            // "설정" 텍스트
+            const Text(
+              '설정',
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 32,
+                fontWeight: FontWeight.w400,
+                color: Colors.white,
+                height: 44.8 / 32,
+              ),
+            ),
+          ],
         ),
         _buildDetailSettingsButton(),
       ],
@@ -473,9 +617,9 @@ class _HomePageState extends State<HomePage> {
             onChanged: (v) {
               setState(() => _toggles[label] = v);
             },
-            activeColor: const Color(0xFF0A9B02),
+            activeThumbColor: const Color(0xFF3A7BFF),
             inactiveThumbColor: Colors.white,
-            inactiveTrackColor: const Color(0xFF7F7F7F),
+            inactiveTrackColor: const Color(0xFF4A4A4A),
           ),
         ],
       ),
