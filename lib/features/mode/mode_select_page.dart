@@ -1,6 +1,7 @@
 // lib/features/mode/mode_select_page.dart
 import 'package:flutter/material.dart';
 import '../../utils/layout_utils.dart';
+import '../screens/home/home_page.dart';
 
 class ModeSelectPage extends StatefulWidget {
   const ModeSelectPage({super.key});
@@ -11,6 +12,14 @@ class ModeSelectPage extends StatefulWidget {
 
 class _ModeSelectPageState extends State<ModeSelectPage> {
   String? _selectedMode; // 선택된 모드
+
+  // 모드 목록 (순서 고정)
+  final List<Map<String, String>> _modes = const [
+    {'label': '없음', 'mode': 'none'},
+    {'label': '영화/드라마', 'mode': 'movie'},
+    {'label': '다큐멘터리', 'mode': 'documentary'},
+    {'label': '예능', 'mode': 'variety'},
+  ];
 
   // 모드별 영상/이미지 경로 매핑
   // 나중에 동영상 경로로 변경 가능
@@ -37,16 +46,19 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
     );
   }
 
+  //전체 컨텐츠 레이아웃
   Widget _buildContent() {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _buildHeadline(), // 🔥 통일된 제목
+          _buildHeadline(), // 🔥 통일된 메인 제목
           const SizedBox(height: 48),
+          //버튼 컨테이너 영역
           _buildButtonContainer(),
           const SizedBox(height: 48),
+          //영상 영역
           _buildVideoArea(),
         ],
       ),
@@ -86,42 +98,91 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
   }
 
   // -------------------------------------------------------------
-  // 버튼 컨테이너
+  // 버튼 컨테이너 (Segmented Control 스타일)
   Widget _buildButtonContainer() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        // borderRadius: BorderRadius.circular(10),
+    // 선택된 버튼의 인덱스 찾기
+    int selectedIndex = -1;
+    if (_selectedMode != null) {
+      for (int i = 0; i < _modes.length; i++) {
+        if (_modes[i]['mode'] == _selectedMode) {
+          selectedIndex = i;
+          break;
+        }
+      }
+    }
+
+    // 컨테이너 크기 계산 (버튼 4개 + 간격 3개 + 패딩)
+    const double buttonWidth = 250.0;
+    const double buttonGap = 8.0;
+    const double padding = 8.0;
+    final double containerWidth =
+        (buttonWidth * _modes.length) +
+        (buttonGap * (_modes.length - 1)) +
+        (padding * 2);
+
+    return Center(
+      child: Container(
+        width: containerWidth,
+        padding: const EdgeInsets.all(padding),
+        decoration: BoxDecoration(
+          color: const Color(0xFF333333),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // 버튼들
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: List.generate(_modes.length, (index) {
+                final modeData = _modes[index];
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (index > 0) const SizedBox(width: buttonGap),
+                    _buildModeButton(
+                      label: modeData['label']!,
+                      mode: modeData['mode']!,
+                      isSelected: _selectedMode == modeData['mode'],
+                    ),
+                  ],
+                );
+              }),
+            ),
+            // 하이라이트 스트로크 (선택된 버튼 위치로 이동)
+            if (selectedIndex >= 0) _buildHighlightStroke(selectedIndex),
+          ],
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildModeButton(
-            label: '없음',
-            mode: 'none',
-            isSelected: _selectedMode == 'none',
-          ),
-          const SizedBox(width: 8),
-          _buildModeButton(
-            label: '영화/드라마',
-            mode: 'movie',
-            isSelected: _selectedMode == 'movie',
-          ),
-          const SizedBox(width: 8),
-          _buildModeButton(
-            label: '다큐멘터리',
-            mode: 'documentary',
-            isSelected: _selectedMode == 'documentary',
-          ),
-          const SizedBox(width: 8),
-          _buildModeButton(
-            label: '예능',
-            mode: 'variety',
-            isSelected: _selectedMode == 'variety',
-          ),
-        ],
+    );
+  }
+
+  // 하이라이트 스트로크 위젯
+  Widget _buildHighlightStroke(int selectedIndex) {
+    // 버튼 너비와 간격
+    const double buttonWidth = 250.0;
+    const double buttonGap = 8.0;
+    const double padding = 8.0;
+
+    // 선택된 버튼의 left 위치 계산
+    double left = padding;
+    for (int i = 0; i < selectedIndex; i++) {
+      left += buttonWidth + buttonGap;
+    }
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      left: left,
+      top: padding,
+      child: Container(
+        width: buttonWidth,
+        height: 59,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white, width: 1),
+        ),
       ),
     );
   }
@@ -144,12 +205,7 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
         child: Container(
           width: 250,
           height: 59,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: isSelected
-                ? Border.all(color: Colors.white, width: 1)
-                : null,
-          ),
+          // border는 하이라이트 스트로크로 처리하므로 제거
           child: Center(
             child: Text(
               label,
@@ -171,7 +227,6 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
   // -------------------------------------------------------------
   // 영상 영역
   // 모드에 따라 다른 영상/이미지 표시
-  // -------------------------------------------------------------
   Widget _buildVideoArea() {
     final videoPath = _getVideoPathForMode(_selectedMode);
 
@@ -179,7 +234,55 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          Navigator.pushNamed(context, '/home');
+          // 모드별 토글 상태 설정
+          Map<String, bool>? initialToggles;
+          if (_selectedMode == 'movie') {
+            // 영화/드라마 모드: 모든 토글 on
+            initialToggles = {
+              '소리의 높낮이': true,
+              '감정 색상': true,
+              '화자 설정': true,
+              '배경음 표시': true,
+              '효과음 표시': true,
+            };
+          }
+
+          // 영화/드라마 모드와 예능 모드일 때 소리의 높낮이와 감정 ㅡ 2단계로 설정
+          String? initialSoundPitch;
+          String? initialEmotionColor;
+          if (_selectedMode == 'movie' || _selectedMode == 'variety') {
+            initialSoundPitch = '2단계';
+            initialEmotionColor = '2단계';
+          } else if (_selectedMode == 'documentary') {
+            // 다큐멘터리 모드: 배경음, 효과음 on / 나머지 off
+            initialToggles = {
+              '소리의 높낮이': false,
+              '감정 색상': false,
+              '화자 설정': false,
+              '배경음 표시': true,
+              '효과음 표시': true,
+            };
+          } else if (_selectedMode == 'variety') {
+            // 예능 모드: 소리의 높낮이, 감정 색상, 배경음 on / 화자 설정, 효과음 off
+            initialToggles = {
+              '소리의 높낮이': true,
+              '감정 색상': true,
+              '화자 설정': false,
+              '배경음 표시': true,
+              '효과음 표시': false,
+            };
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomePage(
+                initialToggles: initialToggles,
+                initialMode: _selectedMode,
+                initialSoundPitch: initialSoundPitch,
+                initialEmotionColor: initialEmotionColor,
+              ),
+            ),
+          );
         },
         child: Container(
           width: 800,

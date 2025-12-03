@@ -4,8 +4,15 @@ import '../../utils/layout_utils.dart';
 
 class SettingPage extends StatefulWidget {
   final Map<String, bool> toggles;
+  final String? initialSoundPitch;
+  final String? initialEmotionColor;
 
-  const SettingPage({super.key, required this.toggles});
+  const SettingPage({
+    super.key,
+    required this.toggles,
+    this.initialSoundPitch,
+    this.initialEmotionColor,
+  });
 
   @override
   State<SettingPage> createState() => _SettingPageState();
@@ -74,6 +81,16 @@ class _SettingPageState extends State<SettingPage> {
     {'label': '예능', 'mode': 'variety'},
   ];
 
+  // 헤드라인 텍스트 데이터
+  final List<Map<String, dynamic>> textList = const [
+    {'text': '나에게 편한 자막 스타일을 골라보세요.', 'size': 80.0, 'weight': FontWeight.w600},
+    {
+      'text': '시청 중에도 언제든 쉽게 바꿀 수 있어요.',
+      'size': 32.0,
+      'weight': FontWeight.w500,
+    },
+  ];
+
   // 설정 영역 스크롤 컨트롤러 (해당 영역만 스크롤 + 스크롤바 표시용)
   final ScrollController _settingsScrollController = ScrollController();
 
@@ -81,6 +98,14 @@ class _SettingPageState extends State<SettingPage> {
   void initState() {
     super.initState();
     _localToggles = Map.from(widget.toggles);
+    // 초기 소리의 높낮이 설정
+    if (widget.initialSoundPitch != null) {
+      _soundPitch = widget.initialSoundPitch!;
+    }
+    // 초기 감정 색상 설정
+    if (widget.initialEmotionColor != null) {
+      _emotionColor = widget.initialEmotionColor!;
+    }
   }
 
   @override
@@ -89,6 +114,7 @@ class _SettingPageState extends State<SettingPage> {
     super.dispose();
   }
 
+  // 미리보기 영상 넣을거임
   String get _previewImage {
     switch (_selectedMode) {
       case 'movie':
@@ -178,35 +204,24 @@ class _SettingPageState extends State<SettingPage> {
   //제목+부제목
   Column buildHeadLine() {
     return Column(
-      children: const [
-        Center(
-          child: Text(
-            '나에게 편한 자막 스타일을 골라보세요.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: _fontFamily,
-              fontSize: 80,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              height: 1.193,
+      children: textList.map((item) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Center(
+            child: Text(
+              item['text'] as String,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: _fontFamily,
+                fontSize: item['size'] as double,
+                fontWeight: item['weight'] as FontWeight,
+                color: Colors.white,
+                height: 1.19,
+              ),
             ),
           ),
-        ),
-        SizedBox(height: 20),
-        Center(
-          child: Text(
-            '시청 중에도 언제든 쉽게 바꿀 수 있어요.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: _fontFamily,
-              fontSize: 32,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-              height: 1.19,
-            ),
-          ),
-        ),
-      ],
+        );
+      }).toList(),
     );
   }
 

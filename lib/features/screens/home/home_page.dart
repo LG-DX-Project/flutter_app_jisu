@@ -3,7 +3,18 @@ import 'package:flutter/material.dart';
 import '../../settings/setting_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final Map<String, bool>? initialToggles;
+  final String? initialMode;
+  final String? initialSoundPitch;
+  final String? initialEmotionColor;
+
+  const HomePage({
+    super.key,
+    this.initialToggles,
+    this.initialMode,
+    this.initialSoundPitch,
+    this.initialEmotionColor,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -26,13 +37,7 @@ class _HomePageState extends State<HomePage> {
   final ScrollController _modeScrollController = ScrollController();
 
   // 토글 상태 Map
-  final Map<String, bool> _toggles = {
-    '소리의 높낮이': true,
-    '감정 색상': false,
-    '화자 설정': false,
-    '배경음 표시': false,
-    '효과음 표시': true,
-  };
+  late Map<String, bool> _toggles;
 
   // 미리보기 이미지
   String get _previewImage {
@@ -46,6 +51,27 @@ class _HomePageState extends State<HomePage> {
       case 'none':
       default:
         return 'assets/preview_none.png';
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // 초기 토글 상태 설정
+    if (widget.initialToggles != null && widget.initialToggles!.isNotEmpty) {
+      _toggles = Map<String, bool>.from(widget.initialToggles!);
+    } else {
+      _toggles = {
+        '소리의 높낮이': true,
+        '감정 색상': false,
+        '화자 설정': false,
+        '배경음 표시': false,
+        '효과음 표시': true,
+      };
+    }
+    // 초기 모드 설정
+    if (widget.initialMode != null) {
+      _selectedMode = widget.initialMode!;
     }
   }
 
@@ -524,7 +550,11 @@ class _HomePageState extends State<HomePage> {
         final result = await Navigator.push<Map<String, bool>>(
           context,
           MaterialPageRoute(
-            builder: (_) => SettingPage(toggles: Map.from(_toggles)),
+            builder: (_) => SettingPage(
+              toggles: Map.from(_toggles),
+              initialSoundPitch: widget.initialSoundPitch,
+              initialEmotionColor: widget.initialEmotionColor,
+            ),
           ),
         );
 

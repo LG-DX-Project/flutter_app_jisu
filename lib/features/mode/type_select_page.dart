@@ -163,7 +163,7 @@ class _TypeSelectPageState extends State<TypeSelectPage> {
     //마우스 올리면 비율이 1.2배로 커짐
     final double scale = isHovered ? 1.2 : 1.0;
     final Color borderColor = isHovered
-        ? const Color(0xFFFD312E)
+        ? const Color(0xFF3A7BFF)
         : Colors.transparent;
 
     // hover 시 커져도 주변이 안 밀리도록 여유 공간 확보
@@ -262,6 +262,19 @@ class _TypeSelectPageState extends State<TypeSelectPage> {
   }) {
     final String currentPath = isHovered ? iconHoverPath : iconPath;
 
-    return Image.asset(currentPath, fit: BoxFit.contain);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+          child: child,
+        );
+      },
+      child: Image.asset(
+        currentPath,
+        key: ValueKey<String>(currentPath), // 이미지 변경 감지를 위한 key
+        fit: BoxFit.contain,
+      ),
+    );
   }
 }
