@@ -24,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   bool _isPanelVisible = false;
   String _selectedMode = 'none';
   bool _isDetailSettingsHovered = false; // 세부설정 호버 상태
+  final Map<String, bool> _hoveredModes = {}; // 각 모드별 호버 상태
 
   // 모드 버튼 목록 (고정 순서)
   final List<Map<String, String>> _modes = const [
@@ -32,6 +33,9 @@ class _HomePageState extends State<HomePage> {
     {'label': '다큐멘터리', 'mode': 'documentary'},
     {'label': '예능', 'mode': 'variety'},
   ];
+
+  // 커스텀 모드 목록 (동적으로 추가됨)
+  List<Map<String, dynamic>> _customModes = [];
 
   // 모드 리스트 스크롤 컨트롤러
   final ScrollController _modeScrollController = ScrollController();
@@ -72,6 +76,47 @@ class _HomePageState extends State<HomePage> {
     // 초기 모드 설정
     if (widget.initialMode != null) {
       _selectedMode = widget.initialMode!;
+
+      // 첫 프레임에서 선택된 모드 버튼으로 스크롤 이동
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_modeScrollController.hasClients) {
+          // 선택된 모드의 인덱스 찾기 (시각적 순서 기준)
+          int selectedIndex = _getVisualIndexForMode(_selectedMode);
+
+          if (selectedIndex >= 0) {
+            // 이전 버튼들의 누적 너비 계산 (간격 포함)
+            double cumulativeWidth = 0;
+            for (int i = 0; i < selectedIndex; i++) {
+              final String prevLabel = _getLabelForVisualIndex(i);
+              final textPainter = TextPainter(
+                text: TextSpan(
+                  text: prevLabel,
+                  style: const TextStyle(
+                    fontFamily: 'Pretendard',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                textDirection: TextDirection.ltr,
+              );
+              textPainter.layout();
+              final prevButtonWidth =
+                  textPainter.size.width + 48; // padding 24*2
+              cumulativeWidth += prevButtonWidth + (i > 0 ? 20 : 0); // 간격 20px
+            }
+
+            // 버튼을 맨 앞으로 보이도록 스크롤
+            _modeScrollController.animateTo(
+              cumulativeWidth.clamp(
+                0,
+                _modeScrollController.position.maxScrollExtent,
+              ),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        }
+      });
     }
   }
 
@@ -267,7 +312,7 @@ class _HomePageState extends State<HomePage> {
           height: 67,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            // color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(10),
           ),
           child: ClipRRect(
@@ -277,20 +322,52 @@ class _HomePageState extends State<HomePage> {
               controller: _modeScrollController,
               physics: const ClampingScrollPhysics(),
               child: Row(
-                children: List.generate(_modes.length, (index) {
-                  final modeData = _modes[index];
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (index > 0) const SizedBox(width: 20),
-                      _buildModeButton(
-                        label: modeData['label']!,
-                        mode: modeData['mode']!,
-                        index: index,
-                      ),
-                    ],
-                  );
-                }),
+                children: [
+                  // 없음 버튼 (맨 앞 고정)
+                  _buildModeButton(
+                    label: _modes[0]['label']!,
+                    mode: _modes[0]['mode']!,
+                    index: 0,
+                    isCustomMode: false,
+                  ),
+                  // 없음과 다음 버튼 사이 간격
+                  if (_customModes.isNotEmpty || _modes.length > 1)
+                    const SizedBox(width: 20),
+                  // 커스텀 모드 버튼들 (없음 바로 뒤에 표시)
+                  ...List.generate(_customModes.length, (index) {
+                    final modeData = _customModes[index];
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (index > 0) const SizedBox(width: 20),
+                        _buildModeButton(
+                          label: modeData['name'] as String,
+                          mode: modeData['id'] as String,
+                          index: 1 + index,
+                          isCustomMode: true,
+                        ),
+                      ],
+                    );
+                  }),
+                  // 기본 모드 버튼들 (없음 제외)
+                  ...List.generate(_modes.length - 1, (index) {
+                    final modeData = _modes[index + 1];
+                    // 시각적 인덱스: 없음(0) + 커스텀(c) 뒤에 붙음
+                    final visualIndex = 1 + _customModes.length + index;
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(width: 20),
+                        _buildModeButton(
+                          label: modeData['label']!,
+                          mode: modeData['mode']!,
+                          index: visualIndex,
+                          isCustomMode: false,
+                        ),
+                      ],
+                    );
+                  }),
+                ],
               ),
             ),
           ),
@@ -348,81 +425,148 @@ class _HomePageState extends State<HomePage> {
     return (totalWidth / _modes.length) + 20;
   }
 
+  // 시각적 인덱스(퀵모드 버튼 순서) 계산: 0=없음, 1..커스텀, 이후 기본 모드(영화/다큐/예능)
+  int _getVisualIndexForMode(String modeId) {
+    final int customCount = _customModes.length;
+    if (modeId == 'none') return 0;
+
+    // 커스텀 모드에서 찾기
+    for (int i = 0; i < customCount; i++) {
+      if (_customModes[i]['id'] == modeId) {
+        return 1 + i;
+      }
+    }
+
+    // 기본 모드(없음 제외)에서 찾기
+    for (int j = 1; j < _modes.length; j++) {
+      if (_modes[j]['mode'] == modeId) {
+        return 1 + customCount + (j - 1);
+      }
+    }
+
+    return -1;
+  }
+
+  // 시각적 인덱스에 해당하는 버튼 라벨 텍스트 반환
+  String _getLabelForVisualIndex(int index) {
+    final int customCount = _customModes.length;
+
+    if (index == 0) {
+      // 없음
+      return _modes[0]['label']!;
+    }
+
+    if (index <= customCount) {
+      // 커스텀 모드들
+      return _customModes[index - 1]['name'] as String;
+    }
+
+    // 나머지 기본 모드들 (영화/드라마, 다큐멘터리, 예능)
+    final int baseIndex = index - customCount; // 1 → 영화, 2 → 다큐, 3 → 예능
+    return _modes[baseIndex]['label']!;
+  }
+
   Widget _buildModeButton({
     required String label,
     required String mode,
     required int index,
+    required bool isCustomMode,
   }) {
     final bool isSelected = _selectedMode == mode;
+    final bool isHovered = _hoveredModes[mode] ?? false;
 
-    return GestureDetector(
-      onTap: () {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
         setState(() {
-          _selectedMode = mode;
-        });
-
-        // 다음 프레임에서 버튼 위치 계산 및 스크롤 이동
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_modeScrollController.hasClients) {
-            // 이전 버튼들의 누적 너비 계산 (간격 포함)
-            double cumulativeWidth = 0;
-            for (int i = 0; i < index; i++) {
-              // 각 버튼의 예상 너비 계산 (텍스트 길이 기반)
-              final prevLabel = _modes[i]['label']!;
-              final textPainter = TextPainter(
-                text: TextSpan(
-                  text: prevLabel,
-                  style: const TextStyle(
-                    fontFamily: 'Pretendard',
-                    fontSize: 28,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                textDirection: TextDirection.ltr,
-              );
-              textPainter.layout();
-              final prevButtonWidth =
-                  textPainter.size.width + 48; // padding 24*2
-              cumulativeWidth += prevButtonWidth + (i > 0 ? 20 : 0); // 간격 20px
-            }
-
-            // 버튼을 맨 앞으로 보이도록 스크롤
-            _modeScrollController.animateTo(
-              cumulativeWidth.clamp(
-                0,
-                _modeScrollController.position.maxScrollExtent,
-              ),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
+          _hoveredModes[mode] = true;
         });
       },
-      child: Container(
-        height: 59,
-        constraints: const BoxConstraints(minWidth: 72),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        decoration: BoxDecoration(
-          color: Color(0xFF4A4A4A),
-          borderRadius: BorderRadius.circular(10),
-          border: isSelected
-              ? Border.all(
-                  color: Colors.white, // 흰색 테두리
-                  width: 3,
-                )
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 28,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-              height: 39.2 / 28,
+      onExit: (_) {
+        setState(() {
+          _hoveredModes[mode] = false;
+        });
+      },
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedMode = mode;
+          });
+
+          // 다음 프레임에서 버튼 위치 계산 및 스크롤 이동
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_modeScrollController.hasClients) {
+              // 이전 버튼들의 누적 너비 계산 (간격 포함)
+              double cumulativeWidth = 0;
+              for (int i = 0; i < index; i++) {
+                final String prevLabel = _getLabelForVisualIndex(i);
+                final textPainter = TextPainter(
+                  text: TextSpan(
+                    text: prevLabel,
+                    style: const TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontSize: 28,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  textDirection: TextDirection.ltr,
+                );
+                textPainter.layout();
+                final prevButtonWidth =
+                    textPainter.size.width + 48; // padding 24*2
+                cumulativeWidth +=
+                    prevButtonWidth + (i > 0 ? 20 : 0); // 간격 20px
+              }
+
+              // 버튼을 맨 앞으로 보이도록 스크롤
+              _modeScrollController.animateTo(
+                cumulativeWidth.clamp(
+                  0,
+                  _modeScrollController.position.maxScrollExtent,
+                ),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+        },
+        child: Container(
+          height: 59,
+          constraints: const BoxConstraints(minWidth: 72),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: BoxDecoration(
+            // 커스텀 모드: 피그마 색상 #ffd54f (노란색), 호버 시 #ffb800 (주황색)
+            // 기본 모드: 기존 색상
+            color: isSelected
+                ? Colors.transparent
+                : (isCustomMode
+                      ? (isHovered
+                            ? const Color(0xFFFFB800) // 피그마 호버 색상
+                            : const Color(0xFFFFD54F)) // 피그마 기본 색상
+                      : const Color(0xFF4A4A4A)),
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected
+                ? Border.all(
+                    color: Colors.white, // 흰색 테두리
+                    width: 3,
+                  )
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 28,
+                fontWeight: FontWeight.w500,
+                // 커스텀 모드: 피그마 색상 #000000 (검정), 선택 시 흰색
+                color: isSelected
+                    ? Colors.white
+                    : (isCustomMode ? Colors.black : Colors.white),
+                height: 39.2 / 28,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -547,7 +691,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDetailSettingsButton() {
     return GestureDetector(
       onTap: () async {
-        final result = await Navigator.push<Map<String, bool>>(
+        final result = await Navigator.push<Map<String, dynamic>>(
           context,
           MaterialPageRoute(
             builder: (_) => SettingPage(
@@ -562,7 +706,61 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             _toggles
               ..clear()
-              ..addAll(result);
+              ..addAll(Map<String, bool>.from(result['toggles'] as Map));
+            // 커스텀 모드 업데이트
+            if (result['customModes'] != null) {
+              _customModes = List<Map<String, dynamic>>.from(
+                result['customModes'] as List,
+              );
+            }
+            // 선택된 모드 업데이트 (새로 추가된 모드가 있으면 선택)
+            if (result['selectedMode'] != null) {
+              _selectedMode = result['selectedMode'] as String;
+
+              // 새로 추가된 모드로 스크롤 이동
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_modeScrollController.hasClients) {
+                  // 선택된 모드의 인덱스 찾기 (시각적 순서 기준)
+                  final int selectedIndex = _getVisualIndexForMode(
+                    _selectedMode,
+                  );
+
+                  if (selectedIndex >= 0) {
+                    // 이전 버튼들의 누적 너비 계산 (간격 포함)
+                    double cumulativeWidth = 0;
+                    for (int i = 0; i < selectedIndex; i++) {
+                      final String prevLabel = _getLabelForVisualIndex(i);
+                      final textPainter = TextPainter(
+                        text: TextSpan(
+                          text: prevLabel,
+                          style: const TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 28,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        textDirection: TextDirection.ltr,
+                      );
+                      textPainter.layout();
+                      final prevButtonWidth =
+                          textPainter.size.width + 48; // padding 24*2
+                      cumulativeWidth +=
+                          prevButtonWidth + (i > 0 ? 20 : 0); // 간격 20px
+                    }
+
+                    // 버튼을 맨 앞으로 보이도록 스크롤
+                    _modeScrollController.animateTo(
+                      cumulativeWidth.clamp(
+                        0,
+                        _modeScrollController.position.maxScrollExtent,
+                      ),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                }
+              });
+            }
           });
         }
       },
