@@ -130,11 +130,13 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
         ),
         child: Stack(
           clipBehavior: Clip.none,
+          alignment: Alignment.topLeft,
           children: [
-            // 버튼들
+            // 버튼들 (Row가 컨테이너 전체 너비를 차지하도록 수정)
             Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: List.generate(_modes.length, (index) {
                 final modeData = _modes[index];
                 return Row(
@@ -175,7 +177,6 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
       left: left,
-      top: padding,
       child: Container(
         width: buttonWidth,
         height: 59,

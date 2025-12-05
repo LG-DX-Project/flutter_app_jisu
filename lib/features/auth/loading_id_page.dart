@@ -85,8 +85,8 @@ class _LoginSelectPageState extends State<LoginSelectPage> {
   /// 파란 원 + L 텍스트
   Widget buildLgIdImage() {
     return Container(
-      width: 240,
-      height: 240,
+      width: 220,
+      height: 220,
       decoration: BoxDecoration(
         color: const Color(0xFF505dff),
         borderRadius: BorderRadius.circular(160),

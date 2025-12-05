@@ -58,7 +58,6 @@ class _LoadingPageState extends State<LoadingPage>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 80),
         SizedBox(
           width: 408,
           height: 452,
