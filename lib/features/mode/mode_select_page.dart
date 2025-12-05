@@ -1,6 +1,5 @@
 // lib/features/mode/mode_select_page.dart
 import 'package:flutter/material.dart';
-import '../../utils/layout_utils.dart';
 import '../screens/home/home_page.dart';
 
 class ModeSelectPage extends StatefulWidget {
@@ -12,6 +11,7 @@ class ModeSelectPage extends StatefulWidget {
 
 class _ModeSelectPageState extends State<ModeSelectPage> {
   String? _selectedMode; // 선택된 모드
+  bool _isVideoAreaHovered = false; // 영상 영역 호버 상태
 
   // 모드 목록 (순서 고정)
   final List<Map<String, String>> _modes = const [
@@ -42,7 +42,26 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: buildBasePageLayout(context: context, child: _buildContent()),
+      body: LayoutBuilder(
+        // 1024 이상이면 데스크탑 레이아웃, 미만이면 모바일/태블릿
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 1024;
+
+          return Center(
+            child: Container(
+              // 화면이 최대 1920까지 보이기
+              constraints: const BoxConstraints(maxWidth: 1920),
+              // 가장자리 여백
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 120.0 : 40.0,
+                vertical: 60.0,
+              ),
+              // RemotePointerOverlay 없이 직접 child 표시
+              child: _buildContent(),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -233,6 +252,16 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        setState(() {
+          _isVideoAreaHovered = true;
+        });
+      },
+      onExit: (_) {
+        setState(() {
+          _isVideoAreaHovered = false;
+        });
+      },
       child: GestureDetector(
         onTap: () {
           // 모드별 토글 상태 설정
@@ -285,12 +314,16 @@ class _ModeSelectPageState extends State<ModeSelectPage> {
             ),
           );
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           width: 800,
           height: 500,
           decoration: BoxDecoration(
             color: const Color(0xFFD9D9D9),
             borderRadius: BorderRadius.circular(20),
+            border: _isVideoAreaHovered
+                ? Border.all(color: Colors.white, width: 4)
+                : null,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),

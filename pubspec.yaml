@@ -35,6 +35,7 @@ flutter:
     - assets/시니어-1.png
     - assets/home_background.png
     - assets/settings_image.png
+    - assets/가_none.png
     - assets/가_basic.png
     - assets/가_wide.png
     - assets/가_middle.png

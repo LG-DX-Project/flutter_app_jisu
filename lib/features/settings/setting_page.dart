@@ -1,6 +1,5 @@
 // lib/features/settings/setting_page.dart
 import 'package:flutter/material.dart';
-import '../../utils/layout_utils.dart';
 
 class SettingPage extends StatefulWidget {
   final Map<String, bool> toggles;
@@ -520,10 +519,11 @@ class _SettingPageState extends State<SettingPage> {
         return 'assets/가_middle.png';
       case '3단계':
         return 'assets/가_wide.png';
-      case '없음':
       case '1단계':
-      default:
         return 'assets/가_basic.png';
+      case '없음':
+      default:
+        return 'assets/가_none.png';
     }
   }
 
@@ -540,48 +540,67 @@ class _SettingPageState extends State<SettingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      //기본 레이아웃 설정
-      body: buildBasePageLayout(
-        context: context,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // 제목+부제목
-              buildHeadLine(),
-              const SizedBox(height: 80),
-              // 모드 선택 버튼들
-              Center(child: _buildModeSelector()),
-              const SizedBox(height: 47),
-              // 메인 컨텐츠 영역 (좌우 718px 섹션 2개, 가운데 정렬)
-              Expanded(
-                child: Center(
-                  child: SizedBox(
-                    width: _settingsSectionWidth * 2 + _sectionGap,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 왼쪽: 모드 설정 섹션 (고정 폭 718, 높이 제한)
-                        SizedBox(
-                          width: _settingsSectionWidth,
-                          height: _settingsSectionHeight,
-                          child: _buildSettingsSection(),
+      //기본 레이아웃 설정 (RemotePointerOverlay 없이 직접 구성)
+      body: LayoutBuilder(
+        // 1024 이상이면 데스크탑 레이아웃, 미만이면 모바일/태블릿
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 1024;
+
+          return Center(
+            child: Container(
+              // 화면이 최대 1920까지 보이기
+              constraints: const BoxConstraints(maxWidth: 1920),
+              // 가장자리 여백
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 120.0 : 40.0,
+                vertical: 60.0,
+              ),
+              // RemotePointerOverlay 없이 직접 child 표시
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 60,
+                  vertical: 40,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 제목+부제목
+                    buildHeadLine(),
+                    const SizedBox(height: 80),
+                    // 모드 선택 버튼들
+                    Center(child: _buildModeSelector()),
+                    const SizedBox(height: 47),
+                    // 메인 컨텐츠 영역 (좌우 718px 섹션 2개, 가운데 정렬)
+                    Expanded(
+                      child: Center(
+                        child: SizedBox(
+                          width: _settingsSectionWidth * 2 + _sectionGap,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 왼쪽: 모드 설정 섹션 (고정 폭 718, 높이 제한)
+                              SizedBox(
+                                width: _settingsSectionWidth,
+                                height: _settingsSectionHeight,
+                                child: _buildSettingsSection(),
+                              ),
+                              const SizedBox(width: _sectionGap),
+                              // 오른쪽: 미리보기 섹션
+                              SizedBox(
+                                width: _settingsSectionWidth,
+                                child: _buildRightSection(),
+                              ), //미리보기
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: _sectionGap),
-                        // 오른쪽: 미리보기 섹션
-                        SizedBox(
-                          width: _settingsSectionWidth,
-                          child: _buildRightSection(),
-                        ), //미리보기
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -811,15 +830,18 @@ class _SettingPageState extends State<SettingPage> {
           ),
 
           // 2) 패널 외부 클릭 시 닫기 (설정 영역 전체 덮는 투명 레이어)
+          // 패널보다 먼저 배치하여 패널이 위에 오도록 함
           if (_isSoundPitchExpanded || _isEmotionColorExpanded)
             Positioned.fill(
               child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
                 onTap: _closeAllPanels,
                 child: Container(color: Colors.transparent),
               ),
             ),
 
           // 3) 소리의 높낮이 옵션 패널 (다른 행 위로 겹쳐 표시)
+          // 패널이 외부 클릭 레이어 위에 오도록 나중에 배치
           if (_isSoundPitchExpanded)
             Positioned(
               top: _soundPitchPanelTop,
@@ -828,6 +850,7 @@ class _SettingPageState extends State<SettingPage> {
             ),
 
           // 4) 감정 색상 옵션 패널 (다른 행 위로 겹쳐 표시)
+          // 패널이 외부 클릭 레이어 위에 오도록 나중에 배치
           if (_isEmotionColorExpanded)
             Positioned(
               top: _emotionColorPanelTop,
@@ -922,10 +945,14 @@ class _SettingPageState extends State<SettingPage> {
                     height: 80,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {
+                      // 디버깅: 이미지 로드 실패 시 빨간색 배경으로 표시
                       return Container(
                         width: _soundPitchImageSize,
                         height: _soundPitchImageSize,
-                        color: Colors.transparent,
+                        color: Colors.red.withOpacity(0.3),
+                        child: const Center(
+                          child: Icon(Icons.error, color: Colors.red, size: 20),
+                        ),
                       );
                     },
                   ),
@@ -1048,7 +1075,8 @@ class _SettingPageState extends State<SettingPage> {
           width: _emotionColorFieldWidth,
           child: Opacity(
             opacity: _isDefaultMode ? _disabledFieldOpacity : 1.0,
-            child: _clickable(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: _isDefaultMode
                   ? null
                   : () {
@@ -1056,62 +1084,67 @@ class _SettingPageState extends State<SettingPage> {
                         _isEmotionColorExpanded = !_isEmotionColorExpanded;
                       });
                     },
-              child: Container(
-                height: _dropdownFieldHeight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(
-                  color: _fieldBgColor,
-                  borderRadius: _isEmotionColorExpanded
-                      ? const BorderRadius.only(
-                          topLeft: Radius.circular(10),
-                          topRight: Radius.circular(10),
-                          bottomLeft: Radius.zero,
-                          bottomRight: Radius.zero,
-                        )
-                      : BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(_emotionColor, style: _fieldTextStyle),
-                        // 선택된 감정 색상 팔레트 미리보기 (없음 제외)
-                        if (_emotionColor != '없음') ...[
-                          const SizedBox(width: 14),
-                          Row(
-                            children: (() {
-                              List<Color> palette = [];
-                              if (_emotionColor == '1단계') {
-                                palette = _getColorPalette(1);
-                              } else if (_emotionColor == '2단계') {
-                                palette = _getColorPalette(2);
-                              } else if (_emotionColor == '3단계') {
-                                palette = _getColorPalette(3);
-                              }
-                              return palette
-                                  .map(
-                                    (color) => Container(
-                                      width: _colorPalettePreviewWidth,
-                                      height: _colorPalettePreviewHeight,
-                                      margin: const EdgeInsets.only(right: 1),
-                                      color: color,
-                                    ),
-                                  )
-                                  .toList();
-                            })(),
-                          ),
+              child: MouseRegion(
+                cursor: _isDefaultMode
+                    ? SystemMouseCursors.basic
+                    : SystemMouseCursors.click,
+                child: Container(
+                  height: _dropdownFieldHeight,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: _fieldBgColor,
+                    borderRadius: _isEmotionColorExpanded
+                        ? const BorderRadius.only(
+                            topLeft: Radius.circular(10),
+                            topRight: Radius.circular(10),
+                            bottomLeft: Radius.zero,
+                            bottomRight: Radius.zero,
+                          )
+                        : BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(_emotionColor, style: _fieldTextStyle),
+                          // 선택된 감정 색상 팔레트 미리보기 (없음 제외)
+                          if (_emotionColor != '없음') ...[
+                            const SizedBox(width: 14),
+                            Row(
+                              children: (() {
+                                List<Color> palette = [];
+                                if (_emotionColor == '1단계') {
+                                  palette = _getColorPalette(1);
+                                } else if (_emotionColor == '2단계') {
+                                  palette = _getColorPalette(2);
+                                } else if (_emotionColor == '3단계') {
+                                  palette = _getColorPalette(3);
+                                }
+                                return palette
+                                    .map(
+                                      (color) => Container(
+                                        width: _colorPalettePreviewWidth,
+                                        height: _colorPalettePreviewHeight,
+                                        margin: const EdgeInsets.only(right: 1),
+                                        color: color,
+                                      ),
+                                    )
+                                    .toList();
+                              })(),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    Icon(
-                      _isEmotionColorExpanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ],
+                      ),
+                      Icon(
+                        _isEmotionColorExpanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1172,58 +1205,62 @@ class _SettingPageState extends State<SettingPage> {
       });
     }
 
-    return _clickable(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: selectEmotion,
-      child: Container(
-        height: _emotionColorOptionHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white.withOpacity(_selectedOptionBgOpacity)
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Text(label, style: _fieldTextStyle),
-            if (colorPalette != null) ...[
-              const SizedBox(width: 14),
-              Row(
-                children: colorPalette
-                    .map(
-                      (color) => GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: selectEmotion,
-                        child: Container(
-                          width: _colorPaletteBoxWidth,
-                          height: _colorPaletteBoxHeight,
-                          margin: const EdgeInsets.only(right: 1),
-                          decoration: BoxDecoration(
-                            color: color,
-                            border: isSelected
-                                ? Border.all(color: Colors.white, width: 1)
-                                : null,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          height: _emotionColorOptionHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white.withOpacity(_selectedOptionBgOpacity)
+                : Colors.transparent,
+          ),
+          child: Row(
+            children: [
+              Text(label, style: _fieldTextStyle),
+              if (colorPalette != null) ...[
+                const SizedBox(width: 14),
+                Row(
+                  children: colorPalette
+                      .map(
+                        (color) => GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: selectEmotion,
+                          child: Container(
+                            width: _colorPaletteBoxWidth,
+                            height: _colorPaletteBoxHeight,
+                            margin: const EdgeInsets.only(right: 1),
+                            decoration: BoxDecoration(
+                              color: color,
+                              border: isSelected
+                                  ? Border.all(color: Colors.white, width: 1)
+                                  : null,
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-            if (showRecommended) ...[
-              const SizedBox(width: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                height: 38,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(50),
+                      )
+                      .toList(),
                 ),
-                child: const Center(
-                  child: Text('권장', style: _recommendedBadgeTextStyle),
+              ],
+              if (showRecommended) ...[
+                const SizedBox(width: 20),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Center(
+                    child: Text('권장', style: _recommendedBadgeTextStyle),
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -1,5 +1,6 @@
 // lib/utils/layout_utils.dart
 import 'package:flutter/material.dart';
+import '../utils/remote_pointer_overlay.dart';
 
 /// LG TV용 공통 레이아웃 래퍼
 /// - 화면 가운데 정렬
@@ -23,8 +24,7 @@ Widget buildBasePageLayout({
             horizontal: isDesktop ? 120.0 : 40.0,
             vertical: 60.0,
           ),
-          // 👉 실제 페이지별 내용
-          child: child,
+          child: RemotePointerOverlay(child: child),
         ),
       );
     },

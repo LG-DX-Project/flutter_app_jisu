@@ -22,6 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool _isPanelVisible = false;
+  bool _isInitialized = false; // 초기 렌더링 완료 플래그
   String _selectedMode = 'none';
   bool _isDetailSettingsHovered = false; // 세부설정 호버 상태
   final Map<String, bool> _hoveredModes = {}; // 각 모드별 호버 상태
@@ -61,6 +62,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    // 패널이 절대 자동으로 열리지 않도록 명시적으로 false 설정
+    _isPanelVisible = false;
+    _isInitialized = false;
+
     // 초기 토글 상태 설정
     if (widget.initialToggles != null && widget.initialToggles!.isNotEmpty) {
       _toggles = Map<String, bool>.from(widget.initialToggles!);
@@ -79,6 +84,7 @@ class _HomePageState extends State<HomePage> {
 
       // 첫 프레임에서 선택된 모드 버튼으로 스크롤 이동
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        _isInitialized = true; // 초기 렌더링 완료 표시
         if (_modeScrollController.hasClients) {
           // 선택된 모드의 인덱스 찾기 (시각적 순서 기준)
           int selectedIndex = _getVisualIndexForMode(_selectedMode);
@@ -116,6 +122,11 @@ class _HomePageState extends State<HomePage> {
             );
           }
         }
+      });
+    } else {
+      // 초기 모드가 없어도 초기화 완료 표시
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _isInitialized = true;
       });
     }
   }
@@ -155,17 +166,19 @@ class _HomePageState extends State<HomePage> {
             ),
 
           // 슬라이드 패널 (왼쪽/위/아래 30px 띄우기)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            left: _isPanelVisible ? 30 : -555,
-            top: 30,
-            bottom: 30,
-            child: MouseRegion(
-              onExit: (_) => setState(() => _isPanelVisible = false),
-              child: _buildSidePanel(),
+          // 초기 렌더링 완료 후에만 렌더링하고, 마우스 호버 시에만 열림
+          if (_isInitialized)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              left: _isPanelVisible ? 30 : -1000, // 패널이 닫혀있을 때는 완전히 화면 밖으로
+              top: 30,
+              bottom: 30,
+              child: MouseRegion(
+                onExit: (_) => setState(() => _isPanelVisible = false),
+                child: _buildSidePanel(),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -330,9 +343,10 @@ class _HomePageState extends State<HomePage> {
                     index: 0,
                     isCustomMode: false,
                   ),
-                  // 없음과 다음 버튼 사이 간격
-                  if (_customModes.isNotEmpty || _modes.length > 1)
-                    const SizedBox(width: 20),
+                  // 없음과 다음 버튼 사이 구분선
+                  const SizedBox(width: 20),
+                  Container(width: 1, height: 59, color: Colors.white),
+                  const SizedBox(width: 20),
                   // 커스텀 모드 버튼들 (없음 바로 뒤에 표시)
                   ...List.generate(_customModes.length, (index) {
                     final modeData = _customModes[index];
